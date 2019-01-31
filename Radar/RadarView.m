@@ -10,7 +10,36 @@
 #import <Foundation/Foundation.h>
 #import "RadarView.h"
 
-@interface Pixel : NSObject
+@interface Ping: NSObject
+
+@property (nonatomic) CGPoint point;
+@property (nonatomic) CGFloat radius;
+@property (nonatomic) CGFloat alpha;
+
+@end
+
+@implementation Ping
+
+- (instancetype)initWithPoint:(CGPoint)point
+{
+    self = [super init];
+    if (self) {
+        self.point = point;
+        self.radius = 0;
+    }
+    return self;
+}
+
+- (void)setRadius:(CGFloat)radius {
+
+    _radius = radius;
+    _alpha = (40.0 - radius) / 40.0;
+
+}
+
+@end
+
+@interface Pixel: NSObject
 
 @property (nonatomic) CGPoint point;
 @property (nonatomic) CGFloat alpha;
@@ -35,6 +64,7 @@
 
 @property (nonatomic) CGFloat rotation;
 @property (nonatomic) NSMutableArray *pixels;
+@property (nonatomic) NSMutableArray *pings;
 
 @end
 
@@ -47,6 +77,7 @@
         [self setAnimationTimeInterval:1/30.0];
 
         _pixels = [@[] mutableCopy];
+        _pings = [@[] mutableCopy];
 
     }
     return self;
@@ -108,7 +139,7 @@
 
     }
 
-    /// Dots
+    /// Pixels
 
     for (Pixel *pixel in self.pixels) {
 
@@ -120,7 +151,27 @@
 
     }
 
+    /// Pings
+
+    for (Ping *ping in self.pings) {
+
+        [[self colorWithAlpha:ping.alpha] set];
+
+        CGContextSetLineWidth(context, 4);
+
+        CGContextMoveToPoint(context, ping.point.x, ping.point.y);
+        CGContextAddLineToPoint(context, ping.point.x, ping.point.y);
+        CGContextStrokePath(context);
+
+        CGContextSetLineWidth(context, 2);
+
+        CGContextStrokeEllipseInRect(context, CGRectMake(ping.point.x - ping.radius, ping.point.y - ping.radius, ping.radius * 2, ping.radius * 2));
+
+    }
+
     /// Center
+
+    CGContextSetLineWidth(context, 2);
 
     CGRect core = CGRectMake(center.x - 20, center.y - 20, 40, 40);
 
@@ -182,6 +233,30 @@
         } else {
 
             pixel.alpha -= (arc4random_uniform(60) + 1) / 1000.0;
+
+        }
+
+    }
+
+    int rotation = self.rotation;
+
+    if (rotation % (arc4random_uniform(4) + 1) == 0) {
+
+        int radius = arc4random_uniform(self.radius - 200) + 100;
+
+        [self.pings addObject:[[Ping alloc] initWithPoint:[self pointAtRadius:radius]]];
+
+    }
+
+    for (Ping *ping in self.pings.copy) {
+
+        if (ping.alpha < 0.02) {
+
+            [self.pings removeObject:ping];
+
+        } else {
+
+            ping.radius += 0.5;
 
         }
 
